@@ -2,6 +2,8 @@ import gradio as gr
 import rembg
 from modules import scripts
 from modules.ui_components import InputAccordion, FormRow
+from modules.processing import images
+from modules.shared import opts
 
 models = [
     "None",
@@ -39,6 +41,7 @@ class BackgroundMaskScript(scripts.Script):
                 model = gr.Dropdown(choices=models, value="u2net", show_label=False)
                 enable_i2irembg = gr.Checkbox(label="Enable", value=False)
                 return_mask = gr.Checkbox(label="Return mask", value=False)
+                save_mask = gr.Checkbox(label="Save mask", value=False)
                 alpha_matting = gr.Checkbox(label="Alpha matting", value=False)
 
             with FormRow(visible=False) as alpha_mask_row:
@@ -53,7 +56,7 @@ class BackgroundMaskScript(scripts.Script):
                 inputs=[alpha_matting],
                 outputs=[alpha_mask_row],
             )
-        return [enable_i2irembg, model, return_mask, alpha_matting, alpha_matting_erode_size,
+        return [enable_i2irembg, model, return_mask, save_mask, alpha_matting, alpha_matting_erode_size,
                 alpha_matting_foreground_threshold, alpha_matting_background_threshold]
 
     def before_process(self, p, *args):
@@ -91,7 +94,7 @@ class BackgroundMaskScript(scripts.Script):
         p.inpaint_full_res = 0  # 重绘区域 0 = 全图 1=仅蒙版区域
 
     def postprocess(self, p, processed, *args):
-        enable_i2irembg, model, return_mask, alpha_matting, alpha_matting_erode_size, alpha_matting_foreground_threshold, alpha_matting_background_threshold, *more = args
+        enable_i2irembg, model, return_mask, save_mask, alpha_matting, alpha_matting_erode_size, alpha_matting_foreground_threshold, alpha_matting_background_threshold, *more = args
 
         if not enable_i2irembg:
             return
@@ -103,3 +106,5 @@ class BackgroundMaskScript(scripts.Script):
             return
 
         processed.images.append(self.mask)
+        if save_mask:
+            images.save_image(self.mask, p.outpath_samples, "", p.seed, p.prompt, opts.samples_format, p=p)
