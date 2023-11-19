@@ -4,6 +4,7 @@ from modules import scripts
 from modules.ui_components import InputAccordion, FormRow
 from modules.processing import images
 from modules.shared import opts
+from PIL import Image, ImageCms
 
 models = [
     "None",
@@ -42,7 +43,6 @@ class BackgroundMaskScript(scripts.Script):
                 enable_i2irembg = gr.Checkbox(label="Enable", value=False)
                 return_mask = gr.Checkbox(label="Return mask", value=False)
                 save_mask = gr.Checkbox(label="Save mask", value=False)
-                fill_foreground = gr.Checkbox(label="Fill foreground", value=False)
                 alpha_matting = gr.Checkbox(label="Alpha matting", value=False)
 
             with FormRow(visible=False) as alpha_mask_row:
@@ -57,7 +57,7 @@ class BackgroundMaskScript(scripts.Script):
                 inputs=[alpha_matting],
                 outputs=[alpha_mask_row],
             )
-        return [enable_i2irembg, model, return_mask, save_mask, fill_foreground, alpha_matting, alpha_matting_erode_size,
+        return [enable_i2irembg, model, return_mask, save_mask, alpha_matting, alpha_matting_erode_size,
                 alpha_matting_foreground_threshold, alpha_matting_background_threshold]
 
     def before_process(self, p, *args):
@@ -89,11 +89,8 @@ class BackgroundMaskScript(scripts.Script):
         p.mask_blur_x = 1
         p.mask_blur_y = 1
         p.inpaint_full_res_padding = 32  # 预留像素
-        
-        if fill_foreground:
-            p.inpainting_mask_invert = 0  # 蒙版模式 0=重绘蒙版内容
-        else:
-            p.inpainting_mask_invert = 1
+
+        p.inpainting_mask_invert = 0  # 蒙版模式 0=重绘蒙版内容
         p.inpainting_fill = 1  # 蒙版蒙住的内容 0=填充
         p.inpaint_full_res = 0  # 重绘区域 0 = 全图 1=仅蒙版区域
 
